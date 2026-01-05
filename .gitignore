@@ -1,0 +1,25 @@
+# MATLAB
+*.asv
+*.m~
+*.mex*
+*.mlapp
+slprj/
+*.autosave
+
+# Data files (large)
+*.mat
+data/*.csv
+!data/sample_spike_data.csv
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+
+# Build outputs
+*.exe
+*.dll
+*.so
