@@ -1,16 +1,16 @@
-% createSampleData.m - Create sample CSV data for testing
+% createSampleData.m - Create sample Excel data for testing
 %
-% This script creates a sample CSV file with simulated spike data
-% that can be used to test the Robot Hand GUI in CSV mode.
+% This script creates a sample Excel file with simulated spike data
+% that can be used to test the Robot Hand GUI in Excel mode.
 %
 % Usage:
 %   >> createSampleData
-%   >> createSampleData('custom_output.csv')
+%   >> createSampleData('custom_output.xlsx')
 
 function createSampleData(outputPath)
     if nargin < 1
         outputPath = fullfile(fileparts(mfilename('fullpath')), ...
-            '..', 'data', 'sample_spike_data.csv');
+            '..', 'data', 'sample_spike_data.xlsx');
     end
 
     % Ensure output directory exists
@@ -65,7 +65,7 @@ function createSampleData(outputPath)
         data.([fingerNames{i} '_Angle']) = angles;
     end
 
-    % Save to CSV
+    % Save to Excel
     writetable(data, outputPath);
 
     fprintf('Sample data created: %s\n', outputPath);

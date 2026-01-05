@@ -1,17 +1,17 @@
 classdef CSVHandler < handle
-    % CSVHandler - CSV File Read/Write Handler
-    % Manages reading spike data from CSV and writing log files
+    % CSVHandler - Excel File Read/Write Handler
+    % Manages reading spike data from Excel and writing log files
     %
-    % CSV Format:
+    % Excel Format:
     %   Time, Thumb_Spike, Thumb_Angle, Index_Spike, Index_Angle, ...
     %   0,    342,         30,          1254,        120,         ...
     %   5,    287,         20,          1189,        110,         ...
     %
     % Usage:
     %   csv = CSVHandler();
-    %   csv.loadFile('spike_data.csv');
+    %   csv.loadFile('spike_data.xlsx');
     %   [spikes, angles] = csv.getDataAtTime(10);
-    %   csv.saveToFile('output_log.csv');
+    %   csv.saveToFile('output_log.xlsx');
 
     properties (Access = public)
         % File paths
@@ -68,7 +68,7 @@ classdef CSVHandler < handle
                 fprintf('Loaded %d records from %s\n', obj.RecordCount, filePath);
 
             catch ME
-                error('Failed to load CSV: %s', ME.message);
+                error('Failed to load Excel: %s', ME.message);
             end
         end
 
@@ -173,7 +173,7 @@ classdef CSVHandler < handle
                 success = true;
 
             catch ME
-                warning('Failed to save CSV: %s', ME.message);
+                warning('Failed to save Excel: %s', ME.message);
             end
         end
 
@@ -202,7 +202,7 @@ classdef CSVHandler < handle
                 return;
             end
 
-            fprintf('\n=== CSV Data Summary ===\n');
+            fprintf('\n=== Excel Data Summary ===\n');
             fprintf('File: %s\n', obj.InputFilePath);
             fprintf('Records: %d\n', obj.RecordCount);
             fprintf('Time range: %.1f - %.1f seconds\n', ...
@@ -286,8 +286,8 @@ classdef CSVHandler < handle
     end
 
     methods (Static)
-        function createSampleCSV(filePath)
-            % Create a sample CSV file for testing
+        function createSampleExcel(filePath)
+            % Create a sample Excel file for testing
 
             numRecords = 84;  % 420 seconds / 5 second intervals
             times = (0:numRecords-1)' * 5;
@@ -312,7 +312,7 @@ classdef CSVHandler < handle
             end
 
             writetable(data, filePath);
-            fprintf('Created sample CSV: %s\n', filePath);
+            fprintf('Created sample Excel: %s\n', filePath);
         end
     end
 end

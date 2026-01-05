@@ -13,13 +13,13 @@ classdef SpikeProcessor < handle
         StoreName = 'Wav1'
         NumChannels = 59
 
-        % Electrode sets for each finger (based on untitled.m)
+        % Electrode sets for each finger (based on user code)
         ElectrodeSets = {
             [5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]              % Set 1: Thumb
             [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]      % Set 2: Index
             [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]      % Set 3: Middle
             [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52]      % Set 4: Ring
-            [53, 54, 55, 56, 57, 58, 59, 1, 2, 3, 4]              % Set 5: Pinky
+            [53, 54, 55, 56, 57, 58, 59, 1, 2, 3, 4, 5]           % Set 5: Pinky
         }
 
         % Spike detection parameters
@@ -118,11 +118,17 @@ classdef SpikeProcessor < handle
             % Count spikes for each electrode set
             for setIdx = 1:5
                 channels = obj.ElectrodeSets{setIdx};
-                channels = channels(channels <= obj.NumChannels);
-                channels = setdiff(channels, obj.IgnoreChannels);
+
+                % Filter valid channels
+                validChannels = [];
+                for ch = channels
+                    if ch >= 1 && ch <= obj.NumChannels && ~ismember(ch, obj.IgnoreChannels)
+                        validChannels = [validChannels, ch];
+                    end
+                end
 
                 totalSpikes = 0;
-                for ch = channels
+                for ch = validChannels
                     try
                         if obj.IsRealtime
                             % Real-time: get current spike data
@@ -131,7 +137,9 @@ classdef SpikeProcessor < handle
                             % Offline: detect spikes in window
                             spikeTimesInWindow = obj.detectSpikes(ch, t1, t2);
                         end
-                        totalSpikes = totalSpikes + length(spikeTimesInWindow);
+                        if ~isempty(spikeTimesInWindow)
+                            totalSpikes = totalSpikes + length(spikeTimesInWindow);
+                        end
                     catch
                         % Skip failed channels
                     end
@@ -170,6 +178,17 @@ classdef SpikeProcessor < handle
             % Detect spikes in a channel for given time range
             % Uses TDT SDK functions
 
+            spikeTimes = [];
+
+            % Validate channel
+            if channel < 1 || channel > obj.NumChannels
+                return;
+            end
+
+            if ismember(channel, obj.IgnoreChannels)
+                return;
+            end
+
             if obj.IsRealtime
                 spikeTimes = obj.getRealtimeSpikes(channel, t1, t2);
                 return;
@@ -182,6 +201,11 @@ classdef SpikeProcessor < handle
                     'CHANNEL', channel, ...
                     'T1', t1, ...
                     'T2', t2);
+
+                % Check if data is valid
+                if ~isfield(data, 'streams') || ~isfield(data.streams, obj.StoreName)
+                    return;
+                end
 
                 % Apply bandpass filter
                 filteredData = TDTdigitalfilter(data, obj.StoreName, ...
@@ -197,15 +221,12 @@ classdef SpikeProcessor < handle
                     'OVERLAP', 0);
 
                 % Extract spike times
-                if isfield(threshData.snips, 'Snip') && isfield(threshData.snips.Snip, 'ts')
+                if isfield(threshData, 'snips') && isfield(threshData.snips, 'Snip') && isfield(threshData.snips.Snip, 'ts')
                     spikeTimes = threshData.snips.Snip.ts';
-                else
-                    spikeTimes = [];
                 end
 
             catch ME
-                warning('Spike detection failed for channel %d: %s', channel, ME.message);
-                spikeTimes = [];
+                % Silently skip failed channels (don't spam warnings)
             end
         end
 

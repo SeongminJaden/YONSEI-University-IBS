@@ -61,7 +61,7 @@ classdef RobotHandGUI < handle
         CurrentTime = 0
         TotalTime = 420           % Default 7 minutes
         WindowSize = 5            % 5 second window
-        UpdateInterval = 2        % 2 second update interval
+        UpdateInterval = 0.1      % 아두이노 전송 간격 (초)
 
         % Timer for real-time processing
         ProcessingTimer
@@ -362,21 +362,21 @@ classdef RobotHandGUI < handle
         end
 
         function selectCSVFile(obj)
-            % Open file dialog to select CSV file
-            [file, path] = uigetfile('*.csv', 'Select Spike Data CSV');
+            % Open file dialog to select Excel file
+            [file, path] = uigetfile('*.xlsx', 'Select Spike Data Excel');
             if file ~= 0
                 obj.CSVFilePath.Text = fullfile(path, file);
                 obj.CSVFilePath.FontColor = [0, 0, 0];
-                obj.addLog(['CSV file selected: ', file]);
+                obj.addLog(['Excel file selected: ', file]);
 
-                % Load CSV data
+                % Load Excel data
                 try
                     obj.CSVHandler.loadFile(fullfile(path, file));
                     obj.TotalTime = obj.CSVHandler.getTotalTime();
-                    obj.addLog(sprintf('CSV loaded: %d records, %.1f seconds', ...
+                    obj.addLog(sprintf('Excel loaded: %d records, %.1f seconds', ...
                         obj.CSVHandler.getRecordCount(), obj.TotalTime));
                 catch ME
-                    obj.addLog(['Error loading CSV: ', ME.message]);
+                    obj.addLog(['Error loading Excel: ', ME.message]);
                 end
             end
         end
@@ -522,6 +522,9 @@ classdef RobotHandGUI < handle
             % Send to Arduino
             if obj.ArduinoConn.IsConnected
                 obj.ArduinoConn.sendAngles(obj.CurrentAngles);
+                obj.addLog('Sent to Arduino');
+            else
+                obj.addLog('Arduino not connected!');
             end
 
             % Log current state
