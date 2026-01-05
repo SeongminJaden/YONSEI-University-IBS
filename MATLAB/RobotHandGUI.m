@@ -70,14 +70,22 @@ classdef RobotHandGUI < handle
         CurrentAngles = [0, 0, 0, 0, 0]
         CurrentSpikes = [0, 0, 0, 0, 0]
 
-        % Settings
-        SDKPath = '/Users/seongmin/Desktop/Matlab data/TDTSDK'
+        % Settings (paths are auto-detected)
+        SDKPath = ''
         DataPath = ''
+        ProjectRoot = ''
     end
 
     methods (Access = public)
         function obj = RobotHandGUI()
             % Constructor - Create and display the GUI
+
+            % Set project root (where this file is located)
+            obj.ProjectRoot = fileparts(fileparts(mfilename('fullpath')));
+
+            % Auto-detect TDT SDK path
+            obj.SDKPath = obj.findTDTSDK();
+
             obj.createFigure();
             obj.createModePanel();
             obj.createControlPanel();
@@ -89,11 +97,12 @@ classdef RobotHandGUI < handle
             obj.initializeProcessors();
 
             % Add TDT SDK to path
-            if exist(obj.SDKPath, 'dir')
+            if ~isempty(obj.SDKPath) && exist(obj.SDKPath, 'dir')
                 addpath(genpath(obj.SDKPath));
-                obj.addLog('TDT SDK loaded');
+                obj.addLog(['TDT SDK loaded: ', obj.SDKPath]);
             else
-                obj.addLog('Warning: TDT SDK not found at default path');
+                obj.addLog('Warning: TDT SDK not found. Real-time mode disabled.');
+                obj.addLog('Set SDK path manually or place TDTSDK folder in project.');
             end
 
             obj.addLog('Neural Robot Hand Controller initialized');
@@ -458,8 +467,9 @@ classdef RobotHandGUI < handle
 
             % Save log to CSV if in realtime mode
             if strcmp(obj.CurrentMode, 'realtime')
-                obj.CSVHandler.saveToFile('data/robot_hand_log.csv');
-                obj.addLog('Log saved to data/robot_hand_log.csv');
+                logPath = obj.getLogPath();
+                obj.CSVHandler.saveToFile(logPath);
+                obj.addLog(['Log saved to ', logPath]);
             end
 
             obj.addLog('Processing stopped');
@@ -617,6 +627,46 @@ classdef RobotHandGUI < handle
                 obj.ArduinoConn.disconnect();
             end
             delete(obj.Figure);
+        end
+
+        function sdkPath = findTDTSDK(obj)
+            % Auto-detect TDT SDK path
+            % Searches in common locations
+
+            sdkPath = '';
+
+            % Search locations (in order of priority)
+            searchPaths = {
+                fullfile(obj.ProjectRoot, 'TDTSDK'),                    % Project folder
+                fullfile(obj.ProjectRoot, '..', 'TDTSDK'),              % Parent folder
+                fullfile(userpath, 'TDTSDK'),                            % MATLAB userpath
+                fullfile(getenv('HOME'), 'Desktop', 'Matlab data', 'TDTSDK'),  % Desktop
+                fullfile(getenv('HOME'), 'Documents', 'MATLAB', 'TDTSDK'),     % Documents
+                fullfile(getenv('HOME'), 'TDTSDK'),                      % Home
+                'C:\TDT\TDTSDK',                                         % Windows default
+                'C:\Users\Public\Documents\TDT\TDTSDK'                   % Windows public
+            };
+
+            for i = 1:length(searchPaths)
+                if exist(searchPaths{i}, 'dir')
+                    % Verify it's actually TDT SDK by checking for key file
+                    if exist(fullfile(searchPaths{i}, 'TDTbin2mat', 'TDTbin2mat.m'), 'file')
+                        sdkPath = searchPaths{i};
+                        return;
+                    end
+                end
+            end
+
+            % Check if already on MATLAB path
+            if exist('TDTbin2mat', 'file') == 2
+                sdkPath = fileparts(which('TDTbin2mat'));
+                sdkPath = fileparts(sdkPath);  % Go up one level
+            end
+        end
+
+        function logPath = getLogPath(obj)
+            % Get full path for log file
+            logPath = fullfile(obj.ProjectRoot, 'data', 'robot_hand_log.csv');
         end
     end
 end
