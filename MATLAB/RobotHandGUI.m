@@ -631,21 +631,33 @@ classdef RobotHandGUI < handle
 
         function sdkPath = findTDTSDK(obj)
             % Auto-detect TDT SDK path
-            % Searches in common locations
+            % Searches in common locations (cross-platform)
 
             sdkPath = '';
+
+            % Get home directory (cross-platform)
+            if ispc
+                homeDir = getenv('USERPROFILE');
+            else
+                homeDir = getenv('HOME');
+            end
 
             % Search locations (in order of priority)
             searchPaths = {
                 fullfile(obj.ProjectRoot, 'TDTSDK'),                    % Project folder
                 fullfile(obj.ProjectRoot, '..', 'TDTSDK'),              % Parent folder
-                fullfile(userpath, 'TDTSDK'),                            % MATLAB userpath
-                fullfile(getenv('HOME'), 'Desktop', 'Matlab data', 'TDTSDK'),  % Desktop
-                fullfile(getenv('HOME'), 'Documents', 'MATLAB', 'TDTSDK'),     % Documents
-                fullfile(getenv('HOME'), 'TDTSDK'),                      % Home
-                'C:\TDT\TDTSDK',                                         % Windows default
-                'C:\Users\Public\Documents\TDT\TDTSDK'                   % Windows public
+                fullfile(obj.ProjectRoot, '..', 'Matlab data', 'TDTSDK'), % Sibling folder
+                fullfile(userpath, 'TDTSDK'),                           % MATLAB userpath
+                fullfile(homeDir, 'Desktop', 'Matlab data', 'TDTSDK'),  % Desktop
+                fullfile(homeDir, 'Documents', 'MATLAB', 'TDTSDK'),     % Documents
+                fullfile(homeDir, 'TDTSDK'),                            % Home
             };
+
+            % Add Windows-specific paths
+            if ispc
+                searchPaths{end+1} = 'C:\TDT\TDTSDK';
+                searchPaths{end+1} = 'C:\Users\Public\Documents\TDT\TDTSDK';
+            end
 
             for i = 1:length(searchPaths)
                 if exist(searchPaths{i}, 'dir')
