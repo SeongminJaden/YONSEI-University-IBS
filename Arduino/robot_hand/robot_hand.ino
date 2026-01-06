@@ -143,7 +143,8 @@ void processCommand(const char* cmd) {
 
   // 각도 4배 스케일링 및 적용
   for (int i = 0; i < NUM_SERVOS; i++) {
-    angles[i] = angles[i] * 4;  // 4배 스케일링 (MATLAB 값이 작아서)
+    angles[i] = angles[i] * 2;
+    angles[0] = angles[0] * 2;  // 4배 스케일링 (MATLAB 값이 작아서)
     angles[i] = constrain(angles[i], MIN_ANGLE, MAX_ANGLE);  // 범위 제한
     targetAngles[i] = angles[i];  // 목표 각도 설정
 

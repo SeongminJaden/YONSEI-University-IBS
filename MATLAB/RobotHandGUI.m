@@ -61,7 +61,8 @@ classdef RobotHandGUI < handle
         CurrentTime = 0
         TotalTime = 420           % Default 7 minutes
         WindowSize = 5            % 5 second window
-        UpdateInterval = 0.1      % 아두이노 전송 간격 (초)
+        UpdateInterval = 1      % 아두이노 전송 간격 (초)
+        CurrentCSVIndex = 1       % CSV 모드에서 현재 읽는 행 인덱스
 
         % Timer for real-time processing
         ProcessingTimer
@@ -412,6 +413,7 @@ classdef RobotHandGUI < handle
 
             obj.IsRunning = true;
             obj.IsPaused = false;
+            obj.CurrentCSVIndex = 1;  % CSV 인덱스 초기화
 
             % Update UI
             obj.StartButton.Enable = 'off';
@@ -479,6 +481,7 @@ classdef RobotHandGUI < handle
             % Reset system to initial state
             obj.stopProcessing();
             obj.CurrentTime = 0;
+            obj.CurrentCSVIndex = 1;
             obj.CurrentAngles = [0, 0, 0, 0, 0];
             obj.CurrentSpikes = [0, 0, 0, 0, 0];
 
@@ -531,8 +534,13 @@ classdef RobotHandGUI < handle
             angleStr = sprintf('%d, %d, %d, %d, %d', ...
                 obj.CurrentAngles(1), obj.CurrentAngles(2), ...
                 obj.CurrentAngles(3), obj.CurrentAngles(4), obj.CurrentAngles(5));
-            obj.addLog(sprintf('Window %.0f: Angles = [%s]', ...
-                obj.CurrentTime/obj.WindowSize, angleStr));
+            if strcmp(obj.CurrentMode, 'csv')
+                obj.addLog(sprintf('Row %d/%d: Angles = [%s]', ...
+                    obj.CurrentCSVIndex-1, obj.CSVHandler.getRecordCount(), angleStr));
+            else
+                obj.addLog(sprintf('Window %.0f: Angles = [%s]', ...
+                    obj.CurrentTime/obj.WindowSize, angleStr));
+            end
 
             % Save to CSV log
             obj.CSVHandler.addRecord(obj.CurrentTime, obj.CurrentSpikes, obj.CurrentAngles);
@@ -558,11 +566,20 @@ classdef RobotHandGUI < handle
         end
 
         function processCSVData(obj)
-            % Process data from CSV file
+            % Process data from CSV file - 한 줄씩 순서대로 읽기
             try
-                [spikeCounts, angles] = obj.CSVHandler.getDataAtTime(obj.CurrentTime);
+                [spikeCounts, angles] = obj.CSVHandler.getDataAtIndex(obj.CurrentCSVIndex);
                 obj.CurrentSpikes = spikeCounts;
                 obj.CurrentAngles = angles;
+
+                % 다음 행으로 이동
+                obj.CurrentCSVIndex = obj.CurrentCSVIndex + 1;
+
+                % 마지막 행이면 종료
+                if obj.CurrentCSVIndex > obj.CSVHandler.getRecordCount()
+                    obj.stopProcessing();
+                    obj.addLog('CSV playback completed');
+                end
             catch ME
                 obj.addLog(['Error reading CSV: ', ME.message]);
             end
