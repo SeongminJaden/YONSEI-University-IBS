@@ -21,8 +21,13 @@ classdef RobotHandGUI < handle
         % Mode selection
         RealtimeRadio
         CSVRadio
+        MotionRadio
         CSVFileButton
         CSVFilePath
+
+        % Motion mode components
+        MotionPanel
+        GestureButtons
 
         % Control buttons
         StartButton
@@ -71,6 +76,23 @@ classdef RobotHandGUI < handle
         CurrentAngles = [0, 0, 0, 0, 0]
         CurrentSpikes = [0, 0, 0, 0, 0]
 
+        % Gesture definitions [Thumb, Index, Middle, Ring, Pinky]
+        % 0 = extended (펴기), 180 = flexed (굽히기)
+        Gestures = struct(...
+            'Fist',      [180, 180, 180, 180, 180], ...  % 주먹
+            'Open',      [0, 0, 0, 0, 0], ...            % 손 펴기
+            'Victory',   [180, 0, 0, 180, 180], ...      % V 사인
+            'ThumbsUp',  [0, 180, 180, 180, 180], ...    % 엄지 척
+            'OK',        [60, 60, 0, 0, 0], ...          % OK 사인
+            'One',       [180, 0, 180, 180, 180], ...    % 숫자 1
+            'Two',       [180, 0, 0, 180, 180], ...      % 숫자 2
+            'Three',     [180, 0, 0, 0, 180], ...        % 숫자 3
+            'Four',      [180, 0, 0, 0, 0], ...          % 숫자 4
+            'Five',      [0, 0, 0, 0, 0] ...             % 숫자 5
+        )
+        GestureNames = {'Fist', 'Open', 'Victory', 'ThumbsUp', 'OK', 'One', 'Two', 'Three', 'Four', 'Five'}
+        GestureLabels = {'주먹', '펴기', 'V', '엄지척', 'OK', '1', '2', '3', '4', '5'}
+
         % Settings (paths are auto-detected)
         SDKPath = ''
         DataPath = ''
@@ -90,6 +112,7 @@ classdef RobotHandGUI < handle
             obj.createFigure();
             obj.createModePanel();
             obj.createControlPanel();
+            obj.createMotionPanel();
             obj.createFingerPanel();
             obj.createTimelinePanel();
             obj.createLogPanel();
@@ -138,7 +161,7 @@ classdef RobotHandGUI < handle
 
             % Radio buttons for mode selection
             bg = uibuttongroup(obj.ModePanel, ...
-                'Position', [10, 10, 300, 50], ...
+                'Position', [10, 10, 400, 50], ...
                 'BorderType', 'none', ...
                 'SelectionChangedFcn', @(~,e) obj.onModeChange(e));
 
@@ -150,6 +173,10 @@ classdef RobotHandGUI < handle
             obj.CSVRadio = uiradiobutton(bg, ...
                 'Text', 'CSV Mode', ...
                 'Position', [140, 15, 100, 22]);
+
+            obj.MotionRadio = uiradiobutton(bg, ...
+                'Text', 'Motion Mode', ...
+                'Position', [250, 15, 120, 22]);
 
             % CSV file selection
             obj.CSVFileButton = uibutton(obj.ModePanel, ...
@@ -217,6 +244,47 @@ classdef RobotHandGUI < handle
                 'Position', [700, 20, 140, 22], ...
                 'FontColor', [0.8, 0.2, 0.2], ...
                 'FontWeight', 'bold');
+        end
+
+        function createMotionPanel(obj)
+            % Create motion gesture panel (initially hidden)
+            obj.MotionPanel = uipanel(obj.Figure, ...
+                'Title', 'Motion Gestures', ...
+                'Position', [20, 450, 860, 60], ...
+                'Visible', 'off');
+
+            % Create gesture buttons
+            numGestures = length(obj.GestureNames);
+            obj.GestureButtons = gobjects(numGestures, 1);
+            buttonWidth = 75;
+            buttonHeight = 35;
+            spacing = 5;
+            startX = 20;
+
+            % Colors for gesture buttons
+            gestureColors = [
+                0.9, 0.4, 0.4;   % Fist - Red
+                0.4, 0.8, 0.4;   % Open - Green
+                0.4, 0.6, 0.9;   % Victory - Blue
+                0.9, 0.7, 0.3;   % ThumbsUp - Yellow
+                0.7, 0.5, 0.9;   % OK - Purple
+                0.5, 0.5, 0.5;   % One - Gray
+                0.5, 0.5, 0.5;   % Two - Gray
+                0.5, 0.5, 0.5;   % Three - Gray
+                0.5, 0.5, 0.5;   % Four - Gray
+                0.5, 0.5, 0.5;   % Five - Gray
+            ];
+
+            for i = 1:numGestures
+                xPos = startX + (i-1) * (buttonWidth + spacing);
+                obj.GestureButtons(i) = uibutton(obj.MotionPanel, ...
+                    'Text', obj.GestureLabels{i}, ...
+                    'Position', [xPos, 10, buttonWidth, buttonHeight], ...
+                    'BackgroundColor', gestureColors(i,:), ...
+                    'FontWeight', 'bold', ...
+                    'Tag', obj.GestureNames{i}, ...
+                    'ButtonPushedFcn', @(src,~) obj.onGestureButton(src.Tag));
+            end
         end
 
         function createFingerPanel(obj)
@@ -354,11 +422,18 @@ classdef RobotHandGUI < handle
             if event.NewValue == obj.RealtimeRadio
                 obj.CurrentMode = 'realtime';
                 obj.CSVFileButton.Enable = 'off';
+                obj.MotionPanel.Visible = 'off';
                 obj.addLog('Switched to Real-time mode');
-            else
+            elseif event.NewValue == obj.CSVRadio
                 obj.CurrentMode = 'csv';
                 obj.CSVFileButton.Enable = 'on';
+                obj.MotionPanel.Visible = 'off';
                 obj.addLog('Switched to CSV mode');
+            elseif event.NewValue == obj.MotionRadio
+                obj.CurrentMode = 'motion';
+                obj.CSVFileButton.Enable = 'off';
+                obj.MotionPanel.Visible = 'on';
+                obj.addLog('Switched to Motion mode - Select a gesture');
             end
         end
 
@@ -699,6 +774,48 @@ classdef RobotHandGUI < handle
         function logPath = getLogPath(obj)
             % Get full path for log file
             logPath = fullfile(obj.ProjectRoot, 'data', 'robot_hand_log.csv');
+        end
+
+        function onGestureButton(obj, gestureName)
+            % Handle gesture button click
+            % gestureName: Name of the gesture (e.g., 'Fist', 'Open', etc.)
+
+            % Get angles for this gesture
+            angles = obj.Gestures.(gestureName);
+
+            % Update current angles
+            obj.CurrentAngles = angles;
+            obj.CurrentSpikes = [0, 0, 0, 0, 0];  % No spike data in motion mode
+
+            % Update display
+            obj.updateFingerDisplay();
+
+            % Auto-connect to Arduino if not connected
+            if ~obj.ArduinoConn.IsConnected
+                port = obj.PortDropdown.Value;
+                if ~contains(port, 'No port')
+                    try
+                        obj.ArduinoConn.connect(port);
+                        obj.ConnectionStatus.Text = 'Connected';
+                        obj.ConnectionStatus.FontColor = [0.2, 0.7, 0.2];
+                        obj.addLog(['Arduino auto-connected on ', port]);
+                    catch ME
+                        obj.addLog(['Arduino connection failed: ', ME.message]);
+                        obj.ConnectionStatus.Text = 'Failed';
+                        obj.ConnectionStatus.FontColor = [0.8, 0.2, 0.2];
+                    end
+                else
+                    obj.addLog('Please select an Arduino port first');
+                    return;
+                end
+            end
+
+            % Send to Arduino
+            if obj.ArduinoConn.IsConnected
+                obj.ArduinoConn.sendAngles(angles);
+                obj.addLog(sprintf('Gesture [%s]: Sent [%d, %d, %d, %d, %d]', ...
+                    gestureName, angles(1), angles(2), angles(3), angles(4), angles(5)));
+            end
         end
     end
 end
