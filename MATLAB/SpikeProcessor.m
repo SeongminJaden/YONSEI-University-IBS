@@ -154,7 +154,8 @@ classdef SpikeProcessor < handle
 
         function angles = spikesToAngles(obj, spikeCounts)
             % Convert spike counts to servo angles
-            % Linear mapping from [MinSpikes, MaxSpikes] to [0, MaxAngle]
+            % Linear mapping from [MinSpikes, MaxSpikes] to [MaxAngle, 0]
+            % 180 = extended (펴기), 0 = flexed (굽히기)
 
             angles = zeros(1, 5);
             for i = 1:5
@@ -162,8 +163,8 @@ classdef SpikeProcessor < handle
                 normalizedCount = (spikeCounts(i) - obj.MinSpikes) / (obj.MaxSpikes - obj.MinSpikes);
                 normalizedCount = max(0, min(1, normalizedCount));  % Clamp to [0, 1]
 
-                % Map to angle
-                angles(i) = round(normalizedCount * obj.MaxAngle);
+                % Map to angle (inverted: more spikes = lower angle = more flexed)
+                angles(i) = round((1 - normalizedCount) * obj.MaxAngle);
             end
         end
 
@@ -291,6 +292,7 @@ classdef SpikeProcessor < handle
         function angles = demoSpikesToAngles(spikeCounts)
             % Static demo function for spike-to-angle conversion
             % For testing without TDT hardware
+            % 180 = extended (펴기), 0 = flexed (굽히기)
             minSpikes = 0;
             maxSpikes = 2000;
             maxAngle = 180;
@@ -299,7 +301,7 @@ classdef SpikeProcessor < handle
             for i = 1:5
                 normalizedCount = (spikeCounts(i) - minSpikes) / (maxSpikes - minSpikes);
                 normalizedCount = max(0, min(1, normalizedCount));
-                angles(i) = round(normalizedCount * maxAngle);
+                angles(i) = round((1 - normalizedCount) * maxAngle);
             end
         end
     end

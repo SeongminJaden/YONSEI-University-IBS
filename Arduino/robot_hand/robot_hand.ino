@@ -53,9 +53,9 @@ const char* FINGER_NAMES[NUM_SERVOS] = {"Thumb", "Index", "Middle", "Ring", "Pin
 // 전역 변수
 // ============================================
 
-Servo servos[NUM_SERVOS];                      // 서보 객체 배열
-int currentAngles[NUM_SERVOS] = {0, 0, 0, 0, 0};  // 현재 각도
-int targetAngles[NUM_SERVOS] = {0, 0, 0, 0, 0};   // 목표 각도
+Servo servos[NUM_SERVOS];                              // 서보 객체 배열
+int currentAngles[NUM_SERVOS] = {180, 180, 180, 180, 180};  // 현재 각도 (180 = 펴기)
+int targetAngles[NUM_SERVOS] = {180, 180, 180, 180, 180};   // 목표 각도 (0 = 접기)
 
 char inputBuffer[MAX_INPUT_LENGTH];  // 시리얼 입력 버퍼
 int inputIndex = 0;                  // 버퍼 인덱스
@@ -75,11 +75,12 @@ void setup() {
 
   // 서보 초기화 (확장 펄스 범위: 500-2500us)
   // attach 전에 write로 초기 위치 설정 (점프 방지)
+  // 180 = 펴기, 0 = 접기
   for (int i = 0; i < NUM_SERVOS; i++) {
-    servos[i].write(0);  // 0도에서 시작
+    servos[i].write(180);  // 180도에서 시작 (손 펴진 상태)
     servos[i].attach(SERVO_PINS[i], 500, 2500);
-    currentAngles[i] = 0;
-    targetAngles[i] = 0;
+    currentAngles[i] = 180;
+    targetAngles[i] = 180;
   }
 
   // 시작 메시지

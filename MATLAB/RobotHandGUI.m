@@ -77,18 +77,18 @@ classdef RobotHandGUI < handle
         CurrentSpikes = [0, 0, 0, 0, 0]
 
         % Gesture definitions [Thumb, Index, Middle, Ring, Pinky]
-        % 0 = extended (펴기), 180 = flexed (굽히기)
+        % 180 = extended (펴기), 0 = flexed (굽히기)
         Gestures = struct(...
-            'Fist',      [180, 180, 180, 180, 180], ...  % 주먹
-            'Open',      [0, 0, 0, 0, 0], ...            % 손 펴기
-            'Victory',   [180, 0, 0, 180, 180], ...      % V 사인
-            'ThumbsUp',  [0, 180, 180, 180, 180], ...    % 엄지 척
-            'OK',        [60, 60, 0, 0, 0], ...          % OK 사인
-            'One',       [180, 0, 180, 180, 180], ...    % 숫자 1
-            'Two',       [180, 0, 0, 180, 180], ...      % 숫자 2
-            'Three',     [180, 0, 0, 0, 180], ...        % 숫자 3
-            'Four',      [180, 0, 0, 0, 0], ...          % 숫자 4
-            'Five',      [0, 0, 0, 0, 0] ...             % 숫자 5
+            'Fist',      [0, 0, 0, 0, 0], ...            % 주먹
+            'Open',      [180, 180, 180, 180, 180], ...  % 손 펴기
+            'Victory',   [0, 180, 180, 0, 0], ...        % V 사인
+            'ThumbsUp',  [180, 0, 0, 0, 0], ...          % 엄지 척
+            'OK',        [120, 120, 180, 180, 180], ...  % OK 사인
+            'One',       [0, 180, 0, 0, 0], ...          % 숫자 1
+            'Two',       [0, 180, 180, 0, 0], ...        % 숫자 2
+            'Three',     [0, 180, 180, 180, 0], ...      % 숫자 3
+            'Four',      [0, 180, 180, 180, 180], ...    % 숫자 4
+            'Five',      [180, 180, 180, 180, 180] ...   % 숫자 5
         )
         GestureNames = {'Fist', 'Open', 'Victory', 'ThumbsUp', 'OK', 'One', 'Two', 'Three', 'Four', 'Five'}
         GestureLabels = {'주먹', '펴기', 'V', '엄지척', 'OK', '1', '2', '3', '4', '5'}
@@ -250,16 +250,16 @@ classdef RobotHandGUI < handle
             % Create motion gesture panel (initially hidden)
             obj.MotionPanel = uipanel(obj.Figure, ...
                 'Title', 'Motion Gestures', ...
-                'Position', [20, 450, 860, 60], ...
+                'Position', [20, 420, 860, 100], ...
                 'Visible', 'off');
 
             % Create gesture buttons
             numGestures = length(obj.GestureNames);
             obj.GestureButtons = gobjects(numGestures, 1);
-            buttonWidth = 75;
-            buttonHeight = 35;
-            spacing = 5;
-            startX = 20;
+            buttonWidth = 78;
+            buttonHeight = 70;
+            spacing = 6;
+            startX = 15;
 
             % Colors for gesture buttons
             gestureColors = [
@@ -282,6 +282,7 @@ classdef RobotHandGUI < handle
                     'Position', [xPos, 10, buttonWidth, buttonHeight], ...
                     'BackgroundColor', gestureColors(i,:), ...
                     'FontWeight', 'bold', ...
+                    'FontSize', 16, ...
                     'Tag', obj.GestureNames{i}, ...
                     'ButtonPushedFcn', @(src,~) obj.onGestureButton(src.Tag));
             end

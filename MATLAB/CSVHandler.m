@@ -275,13 +275,14 @@ classdef CSVHandler < handle
 
         function angles = computeAnglesFromSpikes(~, spikes)
             % Convert spike counts to angles using linear mapping
+            % 180 = extended (펴기), 0 = flexed (굽히기)
             minSpikes = 0;
             maxSpikes = 2000;
             maxAngle = 180;
 
             normalized = (spikes - minSpikes) / (maxSpikes - minSpikes);
             normalized = max(0, min(1, normalized));
-            angles = round(normalized * maxAngle);
+            angles = round((1 - normalized) * maxAngle);
         end
     end
 
